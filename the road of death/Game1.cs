@@ -15,7 +15,13 @@ public class Game1 : Game
 
      private Texture2D personaje2;
     private Vector2 posicion2;
-    private const float escala = 0.3f;
+    private const float alturaPersonaje = 70f; // altura final en pantalla (en píxeles)
+    private const float suelo = 400f;
+    private float escala1;
+    private float escala2;
+    private Rectangle limites1;
+    private Rectangle limites2;
+    private Texture2D fondo;
     public Game1()
     {
         _graphics = new GraphicsDeviceManager(this);
@@ -55,13 +61,56 @@ public class Game1 : Game
         "personaje2.png"
     );
 
-    using (FileStream archivo2 = File.OpenRead(ruta2))
-    {
+        using (FileStream archivo2 = File.OpenRead(ruta2))
+      {
         personaje2 = Texture2D.FromStream(GraphicsDevice, archivo2);
+      }
+         
+         string rutaFondo = Path.Combine(
+         AppContext.BaseDirectory,
+        "content",
+         "fondo.png"
+        );
+
+        using (FileStream archivoFondo = File.OpenRead(rutaFondo))
+        {
+         fondo = Texture2D.FromStream(GraphicsDevice, archivoFondo);
+        }
+         
+         
+         limites1 = ObtenerLimitesVisibles(personaje);
+         limites2 = ObtenerLimitesVisibles(personaje2);
+        
+         escala1 = alturaPersonaje / limites1.Height;
+         escala2 = alturaPersonaje / limites2.Height;
+
+         posicion.Y = suelo - (limites1.Y + limites1.Height) * escala1;
+         posicion2.Y = suelo - (limites2.Y + limites2.Height) * escala2;
     }
 
+    private Rectangle ObtenerLimitesVisibles(Texture2D textura)
+{
+    Color[] pixeles = new Color[textura.Width * textura.Height];
+    textura.GetData(pixeles);
+
+    int minX = textura.Width, minY = textura.Height, maxX = 0, maxY = 0;
+
+    for (int y = 0; y < textura.Height; y++)
+    {
+        for (int x = 0; x < textura.Width; x++)
+        {
+            if (pixeles[y * textura.Width + x].A > 10)
+            {
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+            }
+        }
     }
 
+    return new Rectangle(minX, minY, maxX - minX + 1, maxY - minY + 1);
+}
     protected override void Update(GameTime gameTime)
     {
         if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
@@ -83,16 +132,16 @@ public class Game1 : Game
             posicion.X -= 3;
         }
        posicion.X = MathHelper.Clamp(
-            posicion.X,
-            0,
-            GraphicsDevice.Viewport.Width - personaje.Width * escala
-        );
+         posicion.X,
+         0,
+          GraphicsDevice.Viewport.Width - personaje.Width * escala1
+);
 
         posicion2.X = MathHelper.Clamp(
-            posicion2.X,
-            0,
-            GraphicsDevice.Viewport.Width - personaje2.Width * escala
-        );
+        posicion2.X,
+        0,
+         GraphicsDevice.Viewport.Width - personaje2.Width * escala2
+);
         base.Update(gameTime);
     }
 
@@ -100,8 +149,13 @@ public class Game1 : Game
     {
         GraphicsDevice.Clear(Color.MonoGameOrange);
         _spriteBatch.Begin();
-        _spriteBatch.Draw(personaje,posicion,null,Color.White,0f,Vector2.Zero,0.3f,SpriteEffects.None,0f);
-        _spriteBatch.Draw(personaje2, posicion2, null, Color.White, 0f, Vector2.Zero, escala, SpriteEffects.None, 0f);
+         _spriteBatch.Draw(
+        fondo,
+        new Rectangle(0, 0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height),
+        Color.White
+         );
+        _spriteBatch.Draw(personaje, posicion, null, Color.White, 0f, Vector2.Zero, escala1, SpriteEffects.None, 0f);
+        _spriteBatch.Draw(personaje2, posicion2, null, Color.White, 0f, Vector2.Zero, escala2, SpriteEffects.None, 0f);
         _spriteBatch. End();
         // TODO: Add your drawing code here
 
