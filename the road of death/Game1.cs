@@ -3,7 +3,9 @@ using System.IO;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-
+using Gum.Forms;
+using Gum.Forms.Controls;
+using MonoGameGum;
 namespace the_road_of_death;
 
 public class Game1 : Game
@@ -36,6 +38,10 @@ public class Game1 : Game
         posicion2 = new Vector2(400, 300);
         base.Initialize();
        
+        base.Initialize();
+
+        GumService.Default.Initialize(this, DefaultVisualsVersion.V3);
+         CrearMenu();
     }
 
     protected override void LoadContent()
@@ -76,7 +82,7 @@ public class Game1 : Game
         {
          fondo = Texture2D.FromStream(GraphicsDevice, archivoFondo);
         }
-         
+          
          
          limites1 = ObtenerLimitesVisibles(personaje);
          limites2 = ObtenerLimitesVisibles(personaje2);
@@ -111,8 +117,39 @@ public class Game1 : Game
 
     return new Rectangle(minX, minY, maxX - minX + 1, maxY - minY + 1);
 }
-    protected override void Update(GameTime gameTime)
+
+    private Panel _menuPanel;
+
+    private void CrearMenu()
     {
+        _menuPanel = new Panel();
+        _menuPanel.Dock(Gum.Wireframe.Dock.Fill);
+        _menuPanel.AddToRoot();
+
+        var botonJugar = new Button();
+        botonJugar.Anchor(Gum.Wireframe.Anchor.Center);
+        botonJugar.Y = -20;
+        botonJugar.Width = 100;
+        botonJugar.Text = "Jugar";
+        botonJugar.Click += (sender, args) => _menuPanel.IsVisible = false;
+        _menuPanel.AddChild(botonJugar);
+
+        var botonSalir = new Button();
+        botonSalir.Anchor(Gum.Wireframe.Anchor.Center);
+        botonSalir.Y = 20;
+        botonSalir.Width = 100;
+        botonSalir.Text = "Salir";
+        botonSalir.Click += (sender, args) => Exit();
+        _menuPanel.AddChild(botonSalir);
+
+        botonJugar.IsFocused = true;
+    }
+    protected override void Update(GameTime gameTime)
+    {   GumService.Default.Update(gameTime);
+
+        // Mientras el menú esté visible, no se mueven los personajes
+        if (_menuPanel.IsVisible)
+         return;
         if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
             Exit();
 
@@ -131,7 +168,7 @@ public class Game1 : Game
         {
             posicion.X -= 3;
         }
-       posicion.X = MathHelper.Clamp(
+       posicion.X = MathHelper.Clamp( 
          posicion.X,
          0,
           GraphicsDevice.Viewport.Width - personaje.Width * escala1
@@ -158,7 +195,7 @@ public class Game1 : Game
         _spriteBatch.Draw(personaje2, posicion2, null, Color.White, 0f, Vector2.Zero, escala2, SpriteEffects.None, 0f);
         _spriteBatch. End();
         // TODO: Add your drawing code here
-
+        GumService.Default.Draw();
         base.Draw(gameTime);
     }
 }
