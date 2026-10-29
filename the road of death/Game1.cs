@@ -24,6 +24,16 @@ public class Game1 : Game
     private Rectangle limites1;
     private Rectangle limites2;
     private Texture2D fondo;
+    private Texture2D _fondoInterfaz;
+    private Texture2D pixel;
+    private Rectangle[] botones;
+    private int totalFrames = 8;
+    private int frameAncho, frameAlto;
+    private int frameActual1 = 0;
+    private double temporizador1 = 0;
+    private double tiempoPorFrame = 0.1; // segundos por cuadro
+    private bool caminando1 = false;
+    private SpriteEffects efecto1 = SpriteEffects.None;
     public Game1()
     {
         _graphics = new GraphicsDeviceManager(this);
@@ -53,19 +63,20 @@ public class Game1 : Game
         string ruta = Path.Combine(
         AppContext.BaseDirectory,
         "content",
-        "personaje.png"
+        "correr.png"
         );
     
         using (FileStream archivo = File.OpenRead(ruta))
         {
             personaje = Texture2D.FromStream(GraphicsDevice, archivo);
         }
-
+        frameAncho = personaje.Width / totalFrames;
+        frameAlto = personaje.Height;
         string ruta2 = Path.Combine(
         AppContext.BaseDirectory,
         "content",
         "personaje2.png"
-    );
+         );
 
         using (FileStream archivo2 = File.OpenRead(ruta2))
       {
@@ -92,6 +103,27 @@ public class Game1 : Game
 
          posicion.Y = suelo - (limites1.Y + limites1.Height) * escala1;
          posicion2.Y = suelo - (limites2.Y + limites2.Height) * escala2;
+ 
+        string rutaFondoInterfaz = Path.Combine(AppContext.BaseDirectory, "content", "fondointerfaz.png");
+        using (FileStream archivoFondoInterfaz = File.OpenRead(rutaFondoInterfaz))
+         {
+         _fondoInterfaz = Texture2D.FromStream(GraphicsDevice, archivoFondoInterfaz);
+         }
+
+           // Menú: pixel y botones
+          pixel = new Texture2D(GraphicsDevice, 1, 1);
+         pixel.SetData(new[] { Color.White });
+
+         int ancho = 300;
+         int alto = 60;
+         int x = GraphicsDevice.Viewport.Width / 2 - ancho / 2;
+         int centroY = GraphicsDevice.Viewport.Height / 2;
+
+          botones = new Rectangle[]
+          {
+        new Rectangle(x, centroY - 40, ancho, alto),  // Jugar
+        new Rectangle(x, centroY + 40, ancho, alto)   // Salir
+         };
     }
 
     private Rectangle ObtenerLimitesVisibles(Texture2D textura)
@@ -128,7 +160,7 @@ public class Game1 : Game
 
         var botonJugar = new Button();
         botonJugar.Anchor(Gum.Wireframe.Anchor.Center);
-        botonJugar.Y = -20;
+        botonJugar.Y = 150;
         botonJugar.Width = 100;
         botonJugar.Text = "Jugar";
         botonJugar.Click += (sender, args) => _menuPanel.IsVisible = false;
@@ -136,7 +168,7 @@ public class Game1 : Game
 
         var botonSalir = new Button();
         botonSalir.Anchor(Gum.Wireframe.Anchor.Center);
-        botonSalir.Y = 20;
+        botonSalir.Y = 190;
         botonSalir.Width = 100;
         botonSalir.Text = "Salir";
         botonSalir.Click += (sender, args) => Exit();
@@ -145,6 +177,7 @@ public class Game1 : Game
         botonJugar.IsFocused = true;
     }
     protected override void Update(GameTime gameTime)
+      
     {   GumService.Default.Update(gameTime);
 
         // Mientras el menú esté visible, no se mueven los personajes
@@ -154,20 +187,33 @@ public class Game1 : Game
             Exit();
 
         // TODO: Add your update logic here
-        KeyboardState teclado = Keyboard.GetState();
-        if (teclado.IsKeyDown(Keys.Right))
-        {
-            posicion.X += 3;
-        }
-         if (teclado.IsKeyDown(Keys.D))
-            posicion2.X += 3;
-        if (teclado.IsKeyDown(Keys.A))
-            posicion2.X -= 3;
+       KeyboardState teclado = Keyboard.GetState();
 
-        if (teclado.IsKeyDown(Keys.Left))
-        {
-            posicion.X -= 3;
-        }
+    caminando1 = false;
+
+    if (teclado.IsKeyDown(Keys.Right))
+    {
+    posicion.X += 3;
+    caminando1 = true;
+    efecto1 = SpriteEffects.None;
+    }
+
+    if (teclado.IsKeyDown(Keys.Left))
+    {
+        posicion.X -= 3;
+    caminando1 = true;
+    efecto1 = SpriteEffects.FlipHorizontally;
+    }
+
+    if (teclado.IsKeyDown(Keys.D))
+    {
+        posicion2.X += 3;
+    }
+
+    if (teclado.IsKeyDown(Keys.A))
+    {
+        posicion2.X -= 3;
+    }
        posicion.X = MathHelper.Clamp( 
          posicion.X,
          0,
@@ -179,23 +225,59 @@ public class Game1 : Game
         0,
          GraphicsDevice.Viewport.Width - personaje2.Width * escala2
 );
-        base.Update(gameTime);
+        
+  
+        if (caminando1)
+{
+    temporizador1 += gameTime.ElapsedGameTime.TotalSeconds;
+    if (temporizador1 >= tiempoPorFrame)
+    {
+        temporizador1 = 0;
+        frameActual1 = (frameActual1 + 1) % totalFrames;
+    }
+}
+else
+{
+    frameActual1 = 0;
+    temporizador1 = 0;
+}
+    base.Update(gameTime);
     }
 
-    protected override void Draw(GameTime gameTime)
+   protected override void Draw(GameTime gameTime)
+{
+    GraphicsDevice.Clear(Color.MonoGameOrange);
+
+    if (_menuPanel.IsVisible)
     {
-        GraphicsDevice.Clear(Color.MonoGameOrange);
+        // Solo el fondo del menú
         _spriteBatch.Begin();
-         _spriteBatch.Draw(
+        _spriteBatch.Draw(
+            _fondoInterfaz,
+            new Rectangle(0, 0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height),
+            Color.White);
+        _spriteBatch.End();
+    }
+    else
+{
+    // Fondo del juego + personajes
+    _spriteBatch.Begin();
+    _spriteBatch.Draw(
         fondo,
         new Rectangle(0, 0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height),
-        Color.White
-         );
-        _spriteBatch.Draw(personaje, posicion, null, Color.White, 0f, Vector2.Zero, escala1, SpriteEffects.None, 0f);
-        _spriteBatch.Draw(personaje2, posicion2, null, Color.White, 0f, Vector2.Zero, escala2, SpriteEffects.None, 0f);
-        _spriteBatch. End();
-        // TODO: Add your drawing code here
-        GumService.Default.Draw();
-        base.Draw(gameTime);
-    }
+        Color.White);
+
+    // Personaje 1 (animado)
+    Rectangle origen = new Rectangle(frameActual1 * frameAncho, 0, frameAncho, frameAlto);
+    _spriteBatch.Draw(personaje, posicion, origen, Color.White, 0f, Vector2.Zero, escala1, efecto1, 0f);
+
+    // Personaje 2 (sigue igual por ahora)
+    _spriteBatch.Draw(personaje2, posicion2, null, Color.White, 0f, Vector2.Zero, escala2, SpriteEffects.None, 0f);
+
+    _spriteBatch.End();
+}
+
+    GumService.Default.Draw();
+    base.Draw(gameTime);
+}
 }
