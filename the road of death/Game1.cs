@@ -12,13 +12,17 @@ public class Game1 : Game
 {
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
+    Texture2D _spriteSheet;
+    int[] _frameX = { 48, 248, 488, 780, 1028, 1244, 1480, 1784 };
+    int[] _frameW = { 180, 208, 244, 216, 176, 184, 244, 220 };
+    int _currentFrame = 0;
     private Texture2D personaje;
     private Vector2 posicion;
 
      private Texture2D personaje2;
     private Vector2 posicion2;
     private const float alturaPersonaje = 70f; // altura final en pantalla (en píxeles)
-    private const float suelo = 400f;
+    private const float suelo = 375f;
     private float escala1;
     private float escala2;
     private Rectangle limites1;
@@ -44,11 +48,10 @@ public class Game1 : Game
     protected override void Initialize()
     {
         // TODO: Add your initialization logic here
-        posicion = new Vector2(100, 300);
+        posicion = new Vector2(100, 280);
         posicion2 = new Vector2(400, 300);
         base.Initialize();
-       
-        base.Initialize();
+
 
         GumService.Default.Initialize(this, DefaultVisualsVersion.V3);
          CrearMenu();
@@ -101,7 +104,7 @@ public class Game1 : Game
          escala1 = alturaPersonaje / limites1.Height;
          escala2 = alturaPersonaje / limites2.Height;
 
-         posicion.Y = suelo - (limites1.Y + limites1.Height) * escala1;
+         posicion.Y = suelo - 324 * escala1;
          posicion2.Y = suelo - (limites2.Y + limites2.Height) * escala2;
  
         string rutaFondoInterfaz = Path.Combine(AppContext.BaseDirectory, "content", "fondointerfaz.png");
@@ -217,7 +220,7 @@ public class Game1 : Game
        posicion.X = MathHelper.Clamp( 
          posicion.X,
          0,
-          GraphicsDevice.Viewport.Width - personaje.Width * escala1
+          GraphicsDevice.Viewport.Width - frameAncho * escala1
 );
 
         posicion2.X = MathHelper.Clamp(
@@ -233,7 +236,7 @@ public class Game1 : Game
     if (temporizador1 >= tiempoPorFrame)
     {
         temporizador1 = 0;
-        frameActual1 = (frameActual1 + 1) % totalFrames;
+        _currentFrame = (_currentFrame + 1) % _frameX.Length;
     }
 }
 else
@@ -244,13 +247,13 @@ else
     base.Update(gameTime);
     }
 
-   protected override void Draw(GameTime gameTime)
+protected override void Draw(GameTime gameTime)
 {
     GraphicsDevice.Clear(Color.MonoGameOrange);
 
     if (_menuPanel.IsVisible)
     {
-        // Solo el fondo del menú
+        // fondo del menú
         _spriteBatch.Begin();
         _spriteBatch.Draw(
             _fondoInterfaz,
@@ -259,23 +262,24 @@ else
         _spriteBatch.End();
     }
     else
-{
-    // Fondo del juego + personajes
-    _spriteBatch.Begin();
-    _spriteBatch.Draw(
-        fondo,
-        new Rectangle(0, 0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height),
-        Color.White);
+    {
+        // Fondo del juego + personajes
+        _spriteBatch.Begin();
 
-    // Personaje 1 (animado)
-    Rectangle origen = new Rectangle(frameActual1 * frameAncho, 0, frameAncho, frameAlto);
-    _spriteBatch.Draw(personaje, posicion, origen, Color.White, 0f, Vector2.Zero, escala1, efecto1, 0f);
+        _spriteBatch.Draw(
+            fondo,
+            new Rectangle(0, 0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height),
+            Color.White);
 
-    // Personaje 2 (sigue igual por ahora)
-    _spriteBatch.Draw(personaje2, posicion2, null, Color.White, 0f, Vector2.Zero, escala2, SpriteEffects.None, 0f);
+        // Personaje 1 (animado)
+        var source = new Rectangle(_frameX[_currentFrame], 848, _frameW[_currentFrame], 324);
+        _spriteBatch.Draw(personaje, posicion, source, Color.White, 0f, Vector2.Zero, escala1, efecto1, 0f);
 
-    _spriteBatch.End();
-}
+        // Personaje 2 (sigue igual por ahora)
+        _spriteBatch.Draw(personaje2, posicion2, null, Color.White, 0f, Vector2.Zero, escala2, SpriteEffects.None, 0f);
+
+        _spriteBatch.End();
+    }                                                                        
 
     GumService.Default.Draw();
     base.Draw(gameTime);
